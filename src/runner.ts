@@ -73,6 +73,15 @@ export function escapeCmdShimPath(p: string): string {
 const isBatch = (p: string) => /\.(cmd|bat)$/i.test(p);
 const envGet = (env: Record<string, string | undefined>, k: string) => env[Object.keys(env).find((x) => x.toLowerCase() === k.toLowerCase()) ?? k];
 const isFile = (p: string) => { try { return statSync(p).isFile(); } catch { return false; } };
+/**
+ * `{ ...base, ...over }`, except that on Windows, where variable names are case-insensitive, a key in
+ * `over` also replaces any `base` key that differs only in case (an override `PATH` replaces `Path`).
+ */
+function mergeEnv(base: Record<string, string | undefined>, over: Record<string, string | undefined> = {}, win = process.platform === "win32"): Record<string, string | undefined> {
+  const out = { ...base };
+  if (win) for (const k of Object.keys(over)) for (const b of Object.keys(out)) if (b !== k && b.toLowerCase() === k.toLowerCase()) delete out[b];
+  return Object.assign(out, over);
+}
 
 /**
  * Resolve a Windows command name the way cmd.exe does (current directory first, then PATH, each
@@ -100,7 +109,7 @@ export interface SpawnSpec { file: string; args: string[]; shell: boolean }
  */
 export function spawnSpec(command: string | string[], opts: Pick<RunOptions, "shell" | "env" | "cwd"> = {}, platform: NodeJS.Platform = process.platform): SpawnSpec {
   const isWin = platform === "win32";
-  const env = { ...process.env, ...opts.env };
+  const env = mergeEnv(process.env, opts.env, isWin);
   const cwd = opts.cwd ?? process.cwd();
   const batch = (c0: string) => isBatch(c0) || isBatch(resolveWindowsCommand(c0, env, cwd) ?? "");
   if (typeof command === "string") return { file: command, args: [], shell: true };
@@ -162,7 +171,7 @@ export function runHook(command: string | string[], payload: Record<string, unkn
     let stdout = ""; let stderr = ""; let timedOut = false; let spawnError: string | undefined; let done = false;
     const cut = { stdout: false, stderr: false };
     const child = spawn(file, args, {
-      shell: useShell, cwd: opts.cwd, env: { ...process.env, CLAUDE_PROJECT_DIR: opts.cwd ?? process.cwd(), ...opts.env },
+      shell: useShell, cwd: opts.cwd, env: mergeEnv({ ...process.env, CLAUDE_PROJECT_DIR: opts.cwd ?? process.cwd() }, opts.env) as NodeJS.ProcessEnv,
       detached: !isWin, windowsHide: true, stdio: ["pipe", "pipe", "pipe"],
     });
     if (child.pid) ACTIVE.add(child.pid);

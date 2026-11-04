@@ -8,7 +8,8 @@ import { ROOT, cli, isWin } from "./helpers.js";
 
 // (1) README scan sample is a real run.
 test("README scan sample matches a real scan of examples/project", () => {
-  const readme = readFileSync(join(ROOT, "README.md"), "utf8");
+  // a Windows checkout may have CRLF line endings
+  const readme = readFileSync(join(ROOT, "README.md"), "utf8").replace(/\r\n/g, "\n");
   const block = /\$ cd examples\/project && hookfuzz scan\n([\s\S]*?)```/.exec(readme)![1];
   // an empty home, so the user's own ~/.claude hooks do not show up
   const home = mkdtempSync(join(tmpdir(), "home-"));

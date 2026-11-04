@@ -33,7 +33,8 @@ test("findOnPath accepts WindowsApps-style aliases that stat cannot follow", (t)
   const apps = mkdtempSync(join(tmpdir(), "WindowsApps-"));
   // a dangling link behaves like an App Execution Alias: lstat works, stat fails
   try { symlinkSync(join(apps, "does-not-exist"), join(apps, "python3.exe"), "file"); } catch (e) { t.skip(`cannot create symlinks here: ${(e as Error).message}`); return; }
-  assert.equal(findOnPath("python3", { PATH: apps, PATHEXT: ".COM;.EXE;.BAT;.CMD" }, "win32"), join(apps, "python3.exe"));
+  // on a case-insensitive file system (Windows, default macOS) the first PATHEXT spelling, python3.EXE, already matches
+  assert.equal(findOnPath("python3", { PATH: apps, PATHEXT: ".COM;.EXE;.BAT;.CMD" }, "win32")?.toLowerCase(), join(apps, "python3.exe").toLowerCase());
   // on POSIX a dangling link is not an executable
   if (!isWin) assert.equal(findOnPath("python3.exe", { PATH: apps }, "linux"), undefined);
 });

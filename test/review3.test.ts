@@ -77,6 +77,17 @@ test("exec form resolves a bare shim name to its .cmd path and double-escapes, l
   assert.deepEqual(spawnSpec(["npx", "a"], { env }, "linux"), { file: "npx", args: ["a"], shell: false });
 });
 
+// Windows env names are case-insensitive: an override PATH must replace the inherited Path (and vice versa),
+// or a bare shim name is resolved against the wrong PATH and single-escaped.
+test("spawnSpec resolves shims against opts.env even when its PATH key differs in case", () => {
+  const { bin } = fakeWinPath();
+  for (const key of ["PATH", "Path", "path"]) {
+    const s = spawnSpec(["npx", "a&b"], { env: { [key]: bin, PATHEXT: ".CMD" } }, "win32");
+    assert.equal(s.shell, true, key);
+    assert.ok(s.file.toLowerCase().startsWith(escapeCmdShimPath(join(bin, "npx.cmd")).toLowerCase()), `${key}: ${s.file}`);
+  }
+});
+
 test("a bare-name .cmd shim under --shell receives :, %, & and quotes literally on Windows", { skip: !isWin && "needs cmd.exe (Windows only)" }, async () => {
   const dir = mkdtempSync(join(tmpdir(), "shim3-"));
   writeFileSync(join(dir, "echoargs.mjs"), "process.stderr.write(JSON.stringify(process.argv.slice(2)))");
