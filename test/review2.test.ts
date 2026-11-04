@@ -22,12 +22,14 @@ test("README scan sample matches a real scan of examples/project", () => {
   assert.match(block, /5 hook\(s\), 2 missing/);
 });
 
-// (2) no links to the non-existent repo; package.json has no repository/homepage/bugs.
-test("package metadata and README do not point at a non-existent repo", () => {
+// (2) package metadata points at the real repo; README has no stale/relative links.
+test("package metadata points at the hookfuzz repo and README has no stale links", () => {
   const pkg = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8"));
-  for (const k of ["repository", "homepage", "bugs"]) assert.equal(k in pkg, false, k);
+  assert.equal(pkg.repository?.url, "git+https://github.com/acus9345/hookfuzz.git");
+  assert.equal(pkg.homepage, "https://github.com/acus9345/hookfuzz#readme");
+  assert.equal(pkg.bugs?.url, "https://github.com/acus9345/hookfuzz/issues");
   const readme = readFileSync(join(ROOT, "README.md"), "utf8");
-  assert.doesNotMatch(readme, /github\.com\/acus9345\/(claude-hookshot|hookfuzz)/);
+  assert.doesNotMatch(readme, /github\.com\/acus9345\/claude-hookshot/);
   // relative links break on npmjs.com without a repository field
   assert.doesNotMatch(readme, /\]\((?!https?:\/\/|#)[^)]+\)/);
 });

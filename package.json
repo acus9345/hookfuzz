@@ -1,6 +1,6 @@
 {
   "name": "hookfuzz",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Test harness, spec runner and fuzzer for Claude Code hooks (any language). Build realistic payloads, assert decisions, fuzz edge cases, scan settings.",
   "type": "module",
   "main": "./dist/index.js",
@@ -50,5 +50,13 @@
     "eslint": "^9.39.5",
     "typescript": "~5.9",
     "typescript-eslint": "^8.72.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/acus9345/hookfuzz.git"
+  },
+  "homepage": "https://github.com/acus9345/hookfuzz#readme",
+  "bugs": {
+    "url": "https://github.com/acus9345/hookfuzz/issues"
   }
 }
