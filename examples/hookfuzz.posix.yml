@@ -1,0 +1,17 @@
+# POSIX-only suite exercising a bash hook (exit-code style).
+command: bash hooks/block-rm.sh
+cases:
+  - name: blocks rm -rf
+    event: PreToolUse
+    tool: Bash
+    input: { command: "rm -rf /" }
+    expect: { decision: block, exitCode: 2, stderr: Blocked }
+  - name: allows ls
+    event: PreToolUse
+    tool: Bash
+    input: { command: "ls -la" }
+    expect: { decision: none, exitCode: 0 }
+  - name: exit 2 on PostToolUse does not block
+    event: PostToolUse
+    input: { command: "rm -rf build" }
+    expect: { exitCode: 2, blocked: false }

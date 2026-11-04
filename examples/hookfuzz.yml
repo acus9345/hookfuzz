@@ -1,0 +1,38 @@
+# Cross-platform suite (node + python hooks). Run: hookfuzz test examples/hookfuzz.yml
+command: node hooks/guard.mjs
+timeout: 10000
+cases:
+  - name: denies writing .env
+    event: PreToolUse
+    tool: Write
+    input: { file_path: /repo/.env, content: "SECRET=1" }
+    expect: { decision: deny, blocked: true, validJson: true, reason: /\.env/ }
+  - name: asks before git push
+    event: PreToolUse
+    tool: Bash
+    input: { command: "git push origin main" }
+    expect: { decision: ask, exitCode: 0 }
+  - name: allows npm test
+    event: PreToolUse
+    tool: Bash
+    input: { command: "npm test" }
+    expect: { decision: allow, stdout: '"permissionDecision":"allow"', maxDurationMs: 5000 }
+  - name: passes through unknown commands
+    event: PreToolUse
+    tool: Bash
+    input: { command: "make build" }
+    expect: { decision: none, exitCode: 0 }
+  - name: survives missing tool_input
+    event: PreToolUse
+    payload: { tool_input: null }
+    expect: { exitCode: 0 }
+  - name: python blocks secrets in prompts
+    event: UserPromptSubmit
+    command: [python3, hooks/prompt_filter.py]
+    input: { prompt: "use key sk-abcdefghijklmnopqrstuvwx" }
+    expect: { decision: block, blocked: true, reason: secret }
+  - name: python adds context to normal prompts
+    event: UserPromptSubmit
+    command: [python3, hooks/prompt_filter.py]
+    input: { prompt: "write a test" }
+    expect: { decision: none, validJson: true, stdout: pytest }
